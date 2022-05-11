@@ -134,6 +134,20 @@ def test_option_output(runner, open_changelog):
     assert changelog == "# Changelog\n"
 
 
+@pytest.mark.parametrize("changelog_name", ["test"])
+def test_option_output_with_description(runner, open_changelog):
+    result = runner.invoke(main, ["--output", "test", "-t", "descr"])
+    assert result.exit_code == 0, result.stderr
+    assert result.output == ""
+    changelog = open_changelog().read()
+    assert changelog == "# descr\n"
+
+
+def test_invalid_command(runner, open_changelog):
+    result = runner.invoke(main, ["--test"])
+    assert result.exit_code == 2, result.stderr
+
+
 @pytest.mark.parametrize(
     "commands",
     [
