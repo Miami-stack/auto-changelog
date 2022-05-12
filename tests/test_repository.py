@@ -150,6 +150,7 @@ def test_tag_pattern(tags, tag_prefix, tag_pattern, expected_tags):
         ),
         ("feat: description\n\nBREAKING-CHANGE: details", ("feat", "", "description", "", "BREAKING-CHANGE: details")),
         ("feat: description\n\nBREAKING CHANGE: details", ("feat", "", "description", "", "BREAKING CHANGE: details")),
+        ("feat: description\n\nBREAKING CHANGE: details", ("feat", "", "description", "", "BREAKING CHANGE: details")),
     ],
 )
 def test_parse_conventional_commit_with_empty_message(message, expected):

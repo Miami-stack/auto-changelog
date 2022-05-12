@@ -1,12 +1,12 @@
 import logging
 import re
-import auto_changelog
 from datetime import date
 from hashlib import sha256
-from typing import Dict, List, Tuple, Any, Optional
+from typing import Dict, List, Tuple, Any, Optional, Union
 
 from git import Repo, Commit, TagReference
 
+import auto_changelog
 from auto_changelog.domain_model import RepositoryInterface, Changelog, default_tag_pattern
 
 
@@ -210,17 +210,26 @@ class GitRepository(RepositoryInterface):
         return sha, type_, description, scope, body, footer
 
     @staticmethod
-    def _parse_conventional_commit(message: str) -> Tuple[str, str, str, str, str]:
+    def _check_parentheses(string: str) -> str:
+        s = list(filter(lambda x: re.search(r"\((.*)\)", x), [string]))
+        if len(s) != 0:
+            return string[1:-1]
+        else:
+            return "Failed parenthesis check"
+
+    @staticmethod
+    def _parse_conventional_commit(
+        message: str,
+    ) -> Union[str, Tuple[Union[str, Any], Union[str, Any], Union[str, Any], str, str]]:
         type_ = scope = description = body_footer = body = footer = ""
         # TODO this is less restrictive version of re. I have somewhere more restrictive one, maybe as option?
         match = re.match(r"^(\w+)(\(\w+\))?!?: (.*)(\n\n[\w\W]*)?$", message.strip())
         if match:
             type_, scope, description, body_footer = match.groups(default="")
+            scope = GitRepository._check_parentheses(scope)
         else:
             locallogger = logging.getLogger("repository._parse_conventional_commit")
             locallogger.debug("Commit message did not match expected pattern: {}".format(message))
-        if scope:
-            scope = scope[1:-1]
         if body_footer:
             bf_match = re.match(r"^(\n\n[\w\W]+?)?(\n\n([a-zA-Z-]+|BREAKING[- ]CHANGE)(: | #)[\w\W]+)$", body_footer)
             if bf_match:
