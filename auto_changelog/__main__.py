@@ -75,6 +75,7 @@ def validate_template(ctx, param, value):
     is_flag=True,
     help="set logging level to DEBUG",
 )
+@click.option("--ignore", help="Ignore commits if message contains given keywords", is_flag=True)
 def main(
     path_repo,
     gitlab,
@@ -95,6 +96,7 @@ def main(
     starting_commit: str,
     stopping_commit: str,
     debug: bool,
+    ignore,
 ):
     if debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -128,6 +130,7 @@ def main(
         diff_url=diff_url,
         starting_commit=starting_commit,
         stopping_commit=stopping_commit,
+        ignore=ignore,
     )
 
     if stdout:

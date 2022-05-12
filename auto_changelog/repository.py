@@ -18,6 +18,7 @@ class GitRepository(RepositoryInterface):
         skip_unreleased: bool = True,
         tag_prefix: str = "",
         tag_pattern: Optional[str] = None,
+        ignore: str = None,
     ):
         self.repository = Repo(repository_path)
         self.tag_prefix = tag_prefix
@@ -37,6 +38,7 @@ class GitRepository(RepositoryInterface):
         diff_url: Optional[str] = None,
         starting_commit: str = "",
         stopping_commit: str = "HEAD",
+        ignore: bool = False,
     ) -> Changelog:
         locallogger = logging.getLogger("repository.generate_changelog")
         issue_url = issue_url or self._issue_from_git_remote_url(remote)
@@ -77,10 +79,14 @@ class GitRepository(RepositoryInterface):
                 attributes = self._extract_release_args(commit, self.commit_tags_index[commit])
                 locallogger.debug("Adding release '{}' with attributes {}".format(attributes[0], attributes))
                 changelog.add_release(*attributes)
-
-            attributes = self._extract_note_args(commit)
-            locallogger.debug("Adding commit {} with attributes {}".format(sha, attributes))
-            changelog.add_note(*attributes)
+            if ignore is True:
+                attributes = self._parse_certain_words(commit)
+                locallogger.debug("Adding commit {} with  attributes {}".format(sha, attributes))
+                changelog.add_note(*attributes)
+            else:
+                attributes = self._extract_note_args(commit)
+                locallogger.debug("Adding commit {} with attributes {}".format(sha, attributes))
+                changelog.add_note(*attributes)
 
         # create the compare url for each release
         releases = changelog.releases
@@ -94,6 +100,15 @@ class GitRepository(RepositoryInterface):
         self.repository.close()
 
         return changelog
+
+    # commit.message
+    @staticmethod
+    def _parse_certain_words(commit, *args):
+
+        sha = commit.hexsha
+        message = list(filter(lambda x: all(y not in x for y in args), [commit.message]))
+        type_, scope, description, body, footer = GitRepository._parse_conventional_commit(message[0])
+        return sha, type_, description, scope, body, footer
 
     def _issue_from_git_remote_url(self, remote: str) -> Optional[str]:
         """ Creates issue url with {id} format key """
